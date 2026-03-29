@@ -1,0 +1,752 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>Nod — networking, captured</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500&family=DM+Mono:wght@400;500&display=swap');
+
+:root {
+  --bg: #0e0e0f;
+  --bg2: #161618;
+  --bg3: #1e1e21;
+  --border: rgba(255,255,255,0.08);
+  --border2: rgba(255,255,255,0.15);
+  --text: #f0efe8;
+  --text2: #8a8982;
+  --text3: #4a4a48;
+  --accent: #c8f060;
+  --accent2: #60d0f0;
+  --accent3: #f060a0;
+  --purple: #a080f0;
+  --radius: 14px;
+  --radius-sm: 8px;
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+
+body {
+  font-family: 'DM Sans', sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  min-height: 100vh;
+  max-width: 430px;
+  margin: 0 auto;
+}
+
+/* NAV */
+.nav {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 18px 20px 12px;
+  border-bottom: 1px solid var(--border);
+  position: sticky;
+  top: 0;
+  background: var(--bg);
+  z-index: 100;
+}
+.nav-logo { font-size: 20px; font-weight: 500; letter-spacing: -0.5px; color: var(--accent); }
+.nav-sub { font-size: 11px; color: var(--text3); font-family: 'DM Mono', monospace; }
+
+.tab-bar {
+  display: flex;
+  border-bottom: 1px solid var(--border);
+  background: var(--bg);
+  position: sticky;
+  top: 61px;
+  z-index: 99;
+}
+.tab {
+  flex: 1;
+  padding: 11px 4px;
+  font-size: 11px;
+  font-family: 'DM Mono', monospace;
+  color: var(--text3);
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  border-bottom: 2px solid transparent;
+  transition: all .2s;
+}
+.tab.active { color: var(--accent); border-bottom-color: var(--accent); }
+
+.screen { display: none; padding: 20px; }
+.screen.active { display: block; }
+
+/* TYPOGRAPHY */
+.section-label {
+  font-size: 10px;
+  font-family: 'DM Mono', monospace;
+  color: var(--text3);
+  text-transform: uppercase;
+  letter-spacing: .1em;
+  margin-bottom: 10px;
+  margin-top: 20px;
+}
+.section-label:first-child { margin-top: 0; }
+h2 { font-size: 22px; font-weight: 300; letter-spacing: -0.5px; margin-bottom: 4px; }
+.sub { font-size: 13px; color: var(--text2); margin-bottom: 20px; line-height: 1.5; }
+
+/* CARDS */
+.card {
+  background: var(--bg2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 16px;
+  margin-bottom: 10px;
+}
+.card-accent { border-color: rgba(200,240,96,0.2); }
+
+/* INPUTS */
+label { font-size: 11px; color: var(--text2); display: block; margin-bottom: 5px; font-family: 'DM Mono', monospace; }
+input, textarea, select {
+  width: 100%;
+  background: var(--bg3);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 10px 12px;
+  font-size: 14px;
+  font-family: 'DM Sans', sans-serif;
+  color: var(--text);
+  margin-bottom: 10px;
+  -webkit-appearance: none;
+}
+input:focus, textarea:focus, select:focus {
+  outline: none;
+  border-color: rgba(200,240,96,0.4);
+}
+textarea { resize: vertical; line-height: 1.5; }
+select option { background: var(--bg3); }
+.field-row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.field-row > div { display: flex; flex-direction: column; }
+
+/* BUTTONS */
+.btn {
+  border: 1px solid var(--border2);
+  border-radius: var(--radius-sm);
+  padding: 10px 16px;
+  font-size: 13px;
+  font-family: 'DM Sans', sans-serif;
+  background: transparent;
+  color: var(--text);
+  cursor: pointer;
+  transition: all .15s;
+}
+.btn:active { transform: scale(0.97); }
+.btn-primary {
+  background: var(--accent);
+  color: #0e0e0f;
+  border-color: var(--accent);
+  font-weight: 500;
+}
+.btn-row { display: flex; gap: 8px; margin-top: 12px; flex-wrap: wrap; }
+.btn-full { width: 100%; text-align: center; margin-top: 10px; }
+
+/* AVATAR */
+.avatar {
+  width: 40px; height: 40px;
+  border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 13px; font-weight: 500;
+  flex-shrink: 0;
+}
+
+/* TAGS */
+.tag {
+  display: inline-block;
+  padding: 3px 9px;
+  border-radius: 20px;
+  font-size: 11px;
+  border: 1px solid var(--border);
+  color: var(--text2);
+  background: var(--bg3);
+  margin: 2px;
+}
+.tag-hot { background: rgba(160,128,240,0.15); border-color: rgba(160,128,240,0.3); color: #c0a0ff; }
+.tag-opp { background: rgba(200,240,96,0.1); border-color: rgba(200,240,96,0.2); color: var(--accent); }
+
+/* MISC */
+.divider { height: 1px; background: var(--border); margin: 14px 0; }
+.spinner {
+  display: inline-block; width: 14px; height: 14px;
+  border: 2px solid var(--border2);
+  border-top-color: var(--accent);
+  border-radius: 50%;
+  animation: spin .7s linear infinite;
+  vertical-align: middle; margin-right: 6px;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+.success { background: rgba(200,240,96,0.1); border: 1px solid rgba(200,240,96,0.2); border-radius: var(--radius-sm); padding: 10px 14px; font-size: 13px; color: var(--accent); margin-top: 10px; }
+.rec-dot { width: 7px; height: 7px; border-radius: 50%; background: #f06060; display: inline-block; margin-right: 5px; animation: pulse 1.2s ease-in-out infinite; }
+@keyframes pulse { 0%,100%{opacity:1}50%{opacity:.2} }
+.badge { display: inline-flex; align-items: center; gap: 4px; padding: 3px 9px; border-radius: 20px; font-size: 11px; font-family: 'DM Mono', monospace; }
+
+/* CTA ITEMS */
+.cta-item { display: flex; align-items: flex-start; gap: 10px; padding: 9px 0; border-bottom: 1px solid var(--border); }
+.cta-item:last-child { border-bottom: none; }
+.cta-check {
+  width: 18px; height: 18px; border-radius: 5px;
+  border: 1px solid var(--border2);
+  flex-shrink: 0; cursor: pointer;
+  background: transparent; margin-top: 1px;
+  display: flex; align-items: center; justify-content: center;
+  transition: all .15s;
+}
+.cta-check.done { background: rgba(200,240,96,0.2); border-color: var(--accent); }
+.cta-label { font-size: 13px; color: var(--text); flex: 1; line-height: 1.4; }
+.cta-label.done { text-decoration: line-through; color: var(--text3); }
+.cta-who { font-size: 11px; color: var(--text3); font-family: 'DM Mono', monospace; white-space: nowrap; }
+
+/* GRAPH CANVAS */
+#graph-canvas { display: block; width: 100%; border-radius: var(--radius); border: 1px solid var(--border); background: var(--bg2); }
+
+/* DETECT */
+.detect-tag { display: inline-flex; align-items: center; gap: 6px; padding: 5px 12px; border-radius: 20px; font-size: 12px; font-weight: 500; margin-bottom: 10px; }
+.detect-investor { background: rgba(160,128,240,0.15); color: #c0a0ff; border: 1px solid rgba(160,128,240,0.3); }
+.detect-organizer { background: rgba(96,208,240,0.1); color: var(--accent2); border: 1px solid rgba(96,208,240,0.2); }
+.detect-buyer { background: rgba(200,240,96,0.1); color: var(--accent); border: 1px solid rgba(200,240,96,0.2); }
+.detect-connector { background: rgba(240,96,160,0.1); color: var(--accent3); border: 1px solid rgba(240,96,160,0.2); }
+.detect-none { background: var(--bg3); color: var(--text3); border: 1px solid var(--border); }
+
+.action-btn {
+  display: flex; align-items: center; gap: 10px;
+  padding: 10px 12px;
+  background: var(--bg3);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  cursor: pointer; width: 100%; text-align: left;
+  margin-bottom: 6px; transition: border-color .15s;
+}
+.action-btn:active { border-color: var(--border2); }
+.action-icon { width: 28px; height: 28px; border-radius: 6px; display: flex; align-items: center; justify-content: center; font-size: 14px; flex-shrink: 0; }
+.action-label { font-size: 13px; color: var(--text); flex: 1; }
+.action-sub { font-size: 11px; color: var(--text3); }
+
+/* PITCH */
+.pitch-bar-bg { height: 4px; background: var(--bg3); border-radius: 2px; margin: 8px 0 12px; overflow: hidden; }
+.pitch-bar-fill { height: 4px; border-radius: 2px; transition: width .6s ease; }
+.fb-item { display: flex; gap: 8px; align-items: flex-start; padding: 7px 0; border-bottom: 1px solid var(--border); font-size: 13px; }
+.fb-item:last-child { border-bottom: none; }
+.fb-dot { width: 6px; height: 6px; border-radius: 50%; margin-top: 5px; flex-shrink: 0; }
+
+/* NFC zone */
+.nfc-zone {
+  border: 1px dashed var(--border2);
+  border-radius: var(--radius);
+  padding: 28px 20px;
+  text-align: center;
+  cursor: pointer;
+  margin-bottom: 10px;
+  transition: border-color .2s;
+}
+.nfc-zone:active { border-color: var(--accent); }
+.nfc-icon { font-size: 32px; margin-bottom: 8px; }
+.nfc-title { font-size: 14px; color: var(--text); margin-bottom: 4px; }
+.nfc-sub { font-size: 12px; color: var(--text3); }
+
+/* DEBRIEF */
+.stat-grid { display: grid; grid-template-columns: repeat(4,1fr); gap: 8px; margin-bottom: 20px; }
+.stat { background: var(--bg2); border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 12px 8px; text-align: center; }
+.stat-num { font-size: 20px; font-weight: 300; color: var(--accent); }
+.stat-lbl { font-size: 10px; color: var(--text3); font-family: 'DM Mono', monospace; margin-top: 2px; }
+.nudge-item { display: flex; gap: 10px; padding: 9px 0; border-bottom: 1px solid var(--border); }
+.nudge-item:last-child { border-bottom: none; }
+.nudge-dot { width: 7px; height: 7px; border-radius: 50%; margin-top: 5px; flex-shrink: 0; }
+.person-card { display: flex; align-items: flex-start; gap: 12px; }
+.person-info { flex: 1; }
+.person-name { font-size: 14px; font-weight: 500; }
+.person-role { font-size: 12px; color: var(--text2); margin-top: 1px; }
+.person-ctx { font-size: 12px; color: var(--text2); margin-top: 6px; line-height: 1.5; }
+</style>
+</head>
+<body>
+
+<div class="nav">
+  <div>
+    <div class="nav-logo">nod</div>
+    <div class="nav-sub">networking, captured</div>
+  </div>
+  <div style="font-size:11px;color:var(--text3);font-family:'DM Mono',monospace" id="event-label">no active event</div>
+</div>
+
+<div class="tab-bar">
+  <button class="tab active" onclick="showScreen('capture')">capture</button>
+  <button class="tab" onclick="showScreen('graph')">graph</button>
+  <button class="tab" onclick="showScreen('debrief')">debrief</button>
+  <button class="tab" onclick="showScreen('detect')">detect</button>
+</div>
+
+<!-- ═══════════════════════════════════════════ CAPTURE -->
+<div class="screen active" id="screen-capture">
+  <h2>New contact</h2>
+  <p class="sub">Tap their card or fill in what you know.</p>
+
+  <div class="nfc-zone" onclick="simulateNFC()" id="nfc-zone">
+    <div class="nfc-icon">📲</div>
+    <div class="nfc-title">Tap digital card / NFC</div>
+    <div class="nfc-sub">Or tap here to simulate</div>
+  </div>
+
+  <div class="card">
+    <div class="field-row">
+      <div><label>First name</label><input id="c-fn" placeholder="Joe" /></div>
+      <div><label>Last name</label><input id="c-ln" placeholder="Marsh" /></div>
+    </div>
+    <label>Role</label><input id="c-role" placeholder="CTO" />
+    <label>Company</label><input id="c-co" placeholder="BuildCo" />
+    <div class="field-row">
+      <div><label>Email</label><input id="c-email" placeholder="joe@..." /></div>
+      <div><label>Phone</label><input id="c-phone" placeholder="+1..." /></div>
+    </div>
+  </div>
+
+  <div class="section-label">Conversation notes</div>
+  <div class="card">
+    <label>Paste transcript, voice notes, or just type what you remember</label>
+    <textarea id="c-notes" rows="6" placeholder="e.g. Met Joe at the event. He's building infra tooling at BuildCo, frustrated with their current vendor. Evaluating alternatives in Q2. Asked me to send case studies. Knows Marcus at Redpoint..."></textarea>
+  </div>
+
+  <button class="btn btn-primary btn-full" onclick="extractContact()">Extract with AI →</button>
+  <div id="capture-result"></div>
+</div>
+
+<!-- ═══════════════════════════════════════════ GRAPH -->
+<div class="screen" id="screen-graph">
+  <h2>Your network</h2>
+  <p class="sub">Tap a node to view. Tap two to introduce.</p>
+  <canvas id="graph-canvas" height="320"></canvas>
+  <div id="graph-mode-bar" style="display:flex;gap:8px;margin:12px 0;flex-wrap:wrap">
+    <button class="btn" id="gbtn-view" onclick="gsetMode('view')" style="font-size:12px;padding:7px 12px">View</button>
+    <button class="btn" id="gbtn-intro" onclick="gsetMode('intro')" style="font-size:12px;padding:7px 12px">Introduce two people</button>
+  </div>
+  <div id="graph-panel"></div>
+</div>
+
+<!-- ═══════════════════════════════════════════ DEBRIEF -->
+<div class="screen" id="screen-debrief">
+  <h2>Tonight's debrief</h2>
+  <p class="sub">AI Summit SF · 4 people met</p>
+
+  <div class="stat-grid">
+    <div class="stat"><div class="stat-num">4</div><div class="stat-lbl">met</div></div>
+    <div class="stat"><div class="stat-num">3</div><div class="stat-lbl">hot</div></div>
+    <div class="stat"><div class="stat-num">1</div><div class="stat-lbl">intro</div></div>
+    <div class="stat"><div class="stat-num">6</div><div class="stat-lbl">CTAs</div></div>
+  </div>
+
+  <div class="section-label">People you met</div>
+  <div class="card" style="margin-bottom:8px">
+    <div class="person-card">
+      <div class="avatar" style="background:rgba(160,128,240,0.2);color:#c0a0ff">JM</div>
+      <div class="person-info">
+        <div style="display:flex;align-items:center;gap:8px">
+          <div class="person-name">Joe Marsh</div>
+          <span class="badge" style="background:rgba(200,240,96,0.1);color:var(--accent);font-size:10px">hot</span>
+        </div>
+        <div class="person-role">CTO · BuildCo</div>
+        <div class="person-ctx">Building infra tooling, evaluating vendors in Q2. Wants case studies.</div>
+        <div style="margin-top:8px"><span class="tag tag-opp">Distribution partner</span><span class="tag tag-opp">Q2 vendor eval</span></div>
+      </div>
+    </div>
+  </div>
+  <div class="card" style="margin-bottom:8px">
+    <div class="person-card">
+      <div class="avatar" style="background:rgba(96,208,240,0.15);color:var(--accent2)">SL</div>
+      <div class="person-info">
+        <div style="display:flex;align-items:center;gap:8px">
+          <div class="person-name">Sarah Lin</div>
+          <span class="badge" style="background:rgba(200,240,96,0.1);color:var(--accent);font-size:10px">hot</span>
+        </div>
+        <div class="person-role">Head of Growth · ScaleAI</div>
+        <div class="person-ctx">Needs infra support for product launching this quarter. Intro'd to Joe.</div>
+        <div style="margin-top:8px"><span class="tag tag-opp">Infra vendor intro</span></div>
+      </div>
+    </div>
+  </div>
+  <div class="card" style="margin-bottom:8px">
+    <div class="person-card">
+      <div class="avatar" style="background:rgba(240,96,160,0.15);color:var(--accent3)">MW</div>
+      <div class="person-info">
+        <div style="display:flex;align-items:center;gap:8px">
+          <div class="person-name">Marcus Webb</div>
+          <span class="badge" style="background:rgba(200,240,96,0.1);color:var(--accent);font-size:10px">hot</span>
+        </div>
+        <div class="person-role">Partner · Redpoint</div>
+        <div class="person-ctx">Looking for Series A B2B SaaS. Send any founders raising.</div>
+        <div style="margin-top:8px"><span class="tag tag-opp">Series A pipeline</span></div>
+      </div>
+    </div>
+  </div>
+  <div class="card" style="margin-bottom:8px">
+    <div class="person-card">
+      <div class="avatar" style="background:rgba(200,240,96,0.1);color:var(--accent)">PN</div>
+      <div class="person-info">
+        <div style="display:flex;align-items:center;gap:8px">
+          <div class="person-name">Priya Nair</div>
+          <span class="badge" style="background:var(--bg3);color:var(--text3);font-size:10px">warm</span>
+        </div>
+        <div class="person-role">Founder · Clarity</div>
+        <div class="person-ctx">Raising seed, needs beta customers and investor intros.</div>
+        <div style="margin-top:8px"><span class="tag">Seed intro → Marcus?</span></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="section-label">Action items</div>
+  <div class="card" id="debrief-ctas">
+    <div class="cta-item" id="dcta-0"><div class="cta-check" onclick="toggleDCTA(0)"></div><div class="cta-label" id="dcta-lbl-0">Send case studies to Joe</div><div class="cta-who">today</div></div>
+    <div class="cta-item" id="dcta-1"><div class="cta-check" onclick="toggleDCTA(1)"></div><div class="cta-label" id="dcta-lbl-1">Follow up with Sarah on timeline</div><div class="cta-who">today</div></div>
+    <div class="cta-item" id="dcta-2"><div class="cta-check" onclick="toggleDCTA(2)"></div><div class="cta-label" id="dcta-lbl-2">Intro Priya → Marcus re: seed</div><div class="cta-who">this week</div></div>
+    <div class="cta-item" id="dcta-3"><div class="cta-check" onclick="toggleDCTA(3)"></div><div class="cta-label" id="dcta-lbl-3">Share deck with Marcus</div><div class="cta-who">this week</div></div>
+    <div class="cta-item" id="dcta-4"><div class="cta-check" onclick="toggleDCTA(4)"></div><div class="cta-label" id="dcta-lbl-4">Connect Priya with beta leads</div><div class="cta-who">this week</div></div>
+    <div class="cta-item" id="dcta-5"><div class="cta-check" onclick="toggleDCTA(5)"></div><div class="cta-label" id="dcta-lbl-5">Book coffee with Joe for BuildCo demo</div><div class="cta-who">next week</div></div>
+  </div>
+
+  <div class="section-label">Nudges</div>
+  <div class="card">
+    <div class="nudge-item"><div class="nudge-dot" style="background:#EF9F27"></div><div style="font-size:13px;color:var(--text2);line-height:1.4">Joe is expecting your case studies — he follows up fast, strike while it's fresh</div></div>
+    <div class="nudge-item"><div class="nudge-dot" style="background:#a080f0"></div><div style="font-size:13px;color:var(--text2);line-height:1.4">Priya + Marcus is a strong match — intro them before someone else does</div></div>
+    <div class="nudge-item"><div class="nudge-dot" style="background:#60d0f0"></div><div style="font-size:13px;color:var(--text2);line-height:1.4">Joe and Sarah haven't responded yet — check in with both in 24h</div></div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════ DETECT -->
+<div class="screen" id="screen-detect">
+  <h2>Live detection</h2>
+  <p class="sub">The app listens and tells you what to do next.</p>
+
+  <div class="card" style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px">
+    <div style="font-size:13px;color:var(--text2)"><span class="rec-dot"></span>Listening</div>
+    <div style="font-size:11px;color:var(--text3);font-family:'DM Mono',monospace" id="det-timer">0:00</div>
+  </div>
+
+  <div class="section-label">Simulate hearing</div>
+  <div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:16px">
+    <button class="btn" style="font-size:12px;padding:6px 12px" onclick="runDetect('investor')">Investor</button>
+    <button class="btn" style="font-size:12px;padding:6px 12px" onclick="runDetect('organizer')">Organizer</button>
+    <button class="btn" style="font-size:12px;padding:6px 12px" onclick="runDetect('buyer')">Buyer</button>
+    <button class="btn" style="font-size:12px;padding:6px 12px" onclick="runDetect('connector')">Connector</button>
+    <button class="btn" style="font-size:12px;padding:6px 12px" onclick="runDetect('reset')">Reset</button>
+  </div>
+
+  <div class="card" style="margin-bottom:10px">
+    <div style="font-size:10px;font-family:'DM Mono',monospace;color:var(--text3);margin-bottom:8px;text-transform:uppercase;letter-spacing:.1em">Transcript</div>
+    <div style="font-size:13px;color:var(--text2);line-height:1.6" id="det-transcript">Waiting...</div>
+  </div>
+
+  <div id="det-tag-area"><span class="detect-tag detect-none">No signal detected</span></div>
+  <div id="det-actions" style="margin-top:8px"></div>
+
+  <div class="divider"></div>
+
+  <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px">
+    <div style="font-size:10px;font-family:'DM Mono',monospace;color:var(--text3);text-transform:uppercase;letter-spacing:.1em">Pitch coach</div>
+    <div style="display:flex;align-items:baseline;gap:3px"><span style="font-size:20px;font-weight:300;color:var(--text)" id="det-score">—</span><span style="font-size:11px;color:var(--text3)">/10</span></div>
+  </div>
+  <div class="pitch-bar-bg"><div class="pitch-bar-fill" id="det-bar" style="width:0%;background:var(--purple)"></div></div>
+  <div id="det-feedback"><div style="font-size:12px;color:var(--text3)">Feedback appears as you speak...</div></div>
+</div>
+
+<script>
+// ── TABS ──
+function showScreen(id) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+  document.getElementById('screen-' + id).classList.add('active');
+  event.target.classList.add('active');
+  if (id === 'graph') drawGraph();
+}
+
+// ── NFC SIMULATE ──
+function simulateNFC() {
+  const zone = document.getElementById('nfc-zone');
+  zone.style.borderColor = 'var(--accent)';
+  zone.innerHTML = '<div class="nfc-icon">⚡</div><div class="nfc-title">Card received!</div><div class="nfc-sub">Filling in details...</div>';
+  setTimeout(() => {
+    document.getElementById('c-fn').value = 'Joe';
+    document.getElementById('c-ln').value = 'Marsh';
+    document.getElementById('c-role').value = 'CTO';
+    document.getElementById('c-co').value = 'BuildCo';
+    document.getElementById('c-email').value = 'joe@buildco.com';
+    document.getElementById('c-phone').value = '+1 415 555 0101';
+    zone.style.borderColor = '';
+    zone.innerHTML = '<div class="nfc-icon">✓</div><div class="nfc-title" style="color:var(--accent)">Joe Marsh · BuildCo</div><div class="nfc-sub">Contact info filled in below</div>';
+  }, 800);
+}
+
+// ── CAPTURE / AI EXTRACT ──
+async function extractContact() {
+  const notes = document.getElementById('c-notes').value.trim();
+  if (!notes) { document.getElementById('capture-result').innerHTML = '<div style="font-size:13px;color:#f06060;margin-top:8px">Add some conversation notes first.</div>'; return; }
+  const fn = document.getElementById('c-fn').value || 'Unknown';
+  const ln = document.getElementById('c-ln').value || '';
+  const fullName = [fn,ln].filter(Boolean).join(' ');
+  const resultEl = document.getElementById('capture-result');
+  resultEl.innerHTML = '<div style="margin-top:12px;font-size:13px;color:var(--text2)"><span class="spinner"></span>Extracting...</div>';
+
+  const prompt = `Extract structured networking notes from this conversation about meeting ${fullName}. Return ONLY valid JSON, no markdown:
+{"context":"1-2 sentence summary of who they are","opportunities":["2-4 short opportunity strings"],"actions":["2-5 specific follow-up action items as short imperatives"]}
+
+Notes: ${notes}`;
+
+  try {
+    const resp = await fetch("https://api.anthropic.com/v1/messages", {
+      method:"POST", headers:{"Content-Type":"application/json"},
+      body: JSON.stringify({ model:"claude-sonnet-4-20250514", max_tokens:1000, messages:[{role:"user",content:prompt}] })
+    });
+    const data = await resp.json();
+    const text = data.content?.map(b=>b.text||'').join('').replace(/```json|```/g,'').trim();
+    const parsed = JSON.parse(text);
+    const initials = [fn[0], ln[0]].filter(Boolean).join('').toUpperCase() || '?';
+    resultEl.innerHTML = `
+      <div class="card card-accent" style="margin-top:12px">
+        <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px">
+          <div class="avatar" style="background:rgba(200,240,96,0.15);color:var(--accent)">${initials}</div>
+          <div><div style="font-weight:500">${fullName}</div><div style="font-size:12px;color:var(--text2)">${document.getElementById('c-role').value} · ${document.getElementById('c-co').value}</div></div>
+        </div>
+        <div style="font-size:10px;font-family:'DM Mono',monospace;color:var(--text3);margin-bottom:4px;text-transform:uppercase;letter-spacing:.1em">Context</div>
+        <div style="font-size:13px;color:var(--text2);line-height:1.5;margin-bottom:10px">${parsed.context}</div>
+        <div style="font-size:10px;font-family:'DM Mono',monospace;color:var(--text3);margin-bottom:6px;text-transform:uppercase;letter-spacing:.1em">Opportunities</div>
+        <div style="margin-bottom:10px">${(parsed.opportunities||[]).map(o=>`<span class="tag tag-opp">${o}</span>`).join('')}</div>
+        <div style="font-size:10px;font-family:'DM Mono',monospace;color:var(--text3);margin-bottom:6px;text-transform:uppercase;letter-spacing:.1em">Action items</div>
+        ${(parsed.actions||[]).map((a,i)=>`<div class="cta-item" id="cta-${i}"><div class="cta-check" onclick="toggleCTA(${i})"></div><div class="cta-label" id="cta-lbl-${i}">${a}</div></div>`).join('')}
+      </div>`;
+  } catch(e) {
+    resultEl.innerHTML = '<div style="font-size:13px;color:#f06060;margin-top:8px">Could not extract — try again or fill in manually.</div>';
+  }
+}
+
+const ctaDone = {};
+function toggleCTA(i) {
+  ctaDone[i] = !ctaDone[i];
+  const check = document.querySelector(`#cta-${i} .cta-check`);
+  const lbl = document.getElementById(`cta-lbl-${i}`);
+  if (ctaDone[i]) { check.classList.add('done'); check.innerHTML='<svg width="10" height="10" viewBox="0 0 10 10"><polyline points="1.5,5 4,7.5 8.5,2.5" stroke="var(--accent)" stroke-width="1.5" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>'; lbl.classList.add('done'); }
+  else { check.classList.remove('done'); check.innerHTML=''; lbl.classList.remove('done'); }
+}
+
+const dctaDone = {};
+function toggleDCTA(i) {
+  dctaDone[i] = !dctaDone[i];
+  const check = document.querySelector(`#dcta-${i} .cta-check`);
+  const lbl = document.getElementById(`dcta-lbl-${i}`);
+  if (dctaDone[i]) { check.classList.add('done'); check.innerHTML='<svg width="10" height="10" viewBox="0 0 10 10"><polyline points="1.5,5 4,7.5 8.5,2.5" stroke="var(--accent)" stroke-width="1.5" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>'; lbl.classList.add('done'); }
+  else { check.classList.remove('done'); check.innerHTML=''; lbl.classList.remove('done'); }
+}
+
+// ── GRAPH ──
+const GNODES = [
+  { id:1, name:'You', isYou:true, x:.5, y:.5, color:'#888780', bg:'rgba(136,135,128,0.2)' },
+  { id:2, name:'Joe',    role:'CTO · BuildCo',         email:'joe@buildco.com',    x:.25, y:.22, color:'#c0a0ff', bg:'rgba(160,128,240,0.2)' },
+  { id:3, name:'Sarah',  role:'Growth · ScaleAI',       email:'sarah@scaleai.com',  x:.75, y:.2,  color:'#60d0f0', bg:'rgba(96,208,240,0.2)' },
+  { id:4, name:'Marcus', role:'Partner · Redpoint',     email:'marcus@redpoint.com',x:.2,  y:.72, color:'#f060a0', bg:'rgba(240,96,160,0.2)' },
+  { id:5, name:'Priya',  role:'Founder · Clarity',      email:'priya@clarity.io',   x:.78, y:.75, color:'#c8f060', bg:'rgba(200,240,96,0.2)' },
+];
+const GEDGES = [{a:1,b:2},{a:1,b:3},{a:1,b:4},{a:1,b:5},{a:2,b:3,intro:true}];
+let gMode = 'view', gSel = null, gIntro = [];
+
+function drawGraph() {
+  const canvas = document.getElementById('graph-canvas');
+  const W = canvas.offsetWidth; canvas.width = W; canvas.height = 320;
+  const ctx = canvas.getContext('2d');
+  ctx.clearRect(0,0,W,320);
+  ctx.fillStyle = '#161618'; ctx.fillRect(0,0,W,320);
+
+  GEDGES.forEach(e => {
+    const a = GNODES.find(n=>n.id===e.a), b = GNODES.find(n=>n.id===e.b);
+    ctx.beginPath(); ctx.moveTo(a.x*W, a.y*320); ctx.lineTo(b.x*W, b.y*320);
+    ctx.strokeStyle = e.intro ? '#1D9E75' : 'rgba(255,255,255,0.07)';
+    ctx.lineWidth = e.intro ? 1.5 : 1;
+    if (e.intro) ctx.setLineDash([4,3]); else ctx.setLineDash([]);
+    ctx.stroke(); ctx.setLineDash([]);
+  });
+
+  GNODES.forEach(n => {
+    const x = n.x*W, y = n.y*320, r = n.isYou ? 26 : 20;
+    const selIntro = gIntro.includes(n.id), isSel = gSel===n.id;
+    if (selIntro) { ctx.beginPath(); ctx.arc(x,y,r+6,0,Math.PI*2); ctx.fillStyle='rgba(200,240,96,0.1)'; ctx.fill(); }
+    ctx.beginPath(); ctx.arc(x,y,r,0,Math.PI*2); ctx.fillStyle=n.bg; ctx.fill();
+    ctx.beginPath(); ctx.arc(x,y,r,0,Math.PI*2);
+    ctx.strokeStyle = selIntro ? '#c8f060' : (isSel ? n.color : n.color+'80');
+    ctx.lineWidth = selIntro||isSel ? 2 : 1; ctx.stroke();
+    ctx.fillStyle = n.color;
+    ctx.font = `500 ${n.isYou?11:10}px 'DM Mono', monospace`;
+    ctx.textAlign='center'; ctx.textBaseline='middle';
+    ctx.fillText(n.isYou?'you':n.name.slice(0,3).toLowerCase(), x, y);
+    ctx.fillStyle='rgba(240,239,232,0.5)';
+    ctx.font = `400 10px 'DM Sans', sans-serif`;
+    ctx.fillText(n.name, x, y+r+11);
+  });
+}
+
+function gsetMode(m) {
+  gMode=m; gSel=null; gIntro=[];
+  document.getElementById('gbtn-view').style.borderColor = m==='view'?'var(--accent)':'';
+  document.getElementById('gbtn-view').style.color = m==='view'?'var(--accent)':'';
+  document.getElementById('gbtn-intro').style.borderColor = m==='intro'?'var(--accent)':'';
+  document.getElementById('gbtn-intro').style.color = m==='intro'?'var(--accent)':'';
+  document.getElementById('graph-panel').innerHTML = m==='intro' ? '<div style="font-size:12px;color:var(--text3);padding:4px 0">Tap two people to introduce them</div>' : '';
+  drawGraph();
+}
+
+document.getElementById('graph-canvas').addEventListener('click', async e => {
+  const canvas = document.getElementById('graph-canvas');
+  const rect = canvas.getBoundingClientRect();
+  const sx = canvas.width/rect.width, sy = canvas.height/rect.height;
+  const mx=(e.clientX-rect.left)*sx, my=(e.clientY-rect.top)*sy;
+  let hit = null;
+  for (const n of GNODES) {
+    const r=n.isYou?26:20, dx=mx-n.x*canvas.width, dy=my-n.y*320;
+    if (dx*dx+dy*dy<=(r+6)*(r+6)) { hit=n; break; }
+  }
+  if (!hit) return;
+
+  if (gMode==='view') {
+    gSel=hit.id;
+    if (!hit.isYou) {
+      document.getElementById('graph-panel').innerHTML = `
+        <div class="card" style="margin-top:0">
+          <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px">
+            <div class="avatar" style="background:${hit.bg};color:${hit.color}">${hit.name.slice(0,2).toUpperCase()}</div>
+            <div><div style="font-weight:500">${hit.name}</div><div style="font-size:12px;color:var(--text2)">${hit.role}</div></div>
+          </div>
+          <div style="font-size:13px;color:var(--text2)">${hit.email}</div>
+        </div>`;
+    }
+  } else if (gMode==='intro') {
+    if (hit.isYou) return;
+    if (gIntro.includes(hit.id)) gIntro=gIntro.filter(x=>x!==hit.id);
+    else if (gIntro.length<2) gIntro.push(hit.id);
+    if (gIntro.length===2) {
+      const a=GNODES.find(n=>n.id===gIntro[0]), b=GNODES.find(n=>n.id===gIntro[1]);
+      document.getElementById('graph-panel').innerHTML = `<div class="card" style="margin-top:0"><div style="font-size:12px;color:var(--text2);margin-bottom:8px">Introducing ${a.name} ↔ ${b.name}</div><div id="intro-body"><span class="spinner"></span><span style="font-size:12px;color:var(--text3)">Drafting intro note...</span></div></div>`;
+      const prompt = `Write a warm 2-sentence intro explaining why ${a.name} (${a.role}) and ${b.name} (${b.role}) should meet. Be specific and under 50 words. First person, sign off as "your connector".`;
+      try {
+        const resp = await fetch("https://api.anthropic.com/v1/messages",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({model:"claude-sonnet-4-20250514",max_tokens:200,messages:[{role:"user",content:prompt}]})});
+        const data = await resp.json();
+        const note = data.content?.map(b=>b.text||'').join('')||'Great match — reach out!';
+        document.getElementById('intro-body').innerHTML = `<div style="font-size:13px;color:var(--text2);line-height:1.5;margin-bottom:10px">${note}</div><button class="btn btn-primary" style="font-size:12px;padding:7px 14px" onclick="sendIntro(${a.id},${b.id})">Send intro →</button>`;
+      } catch { document.getElementById('intro-body').innerHTML = '<div style="font-size:12px;color:#f06060">Could not draft — try again.</div>'; }
+    } else {
+      document.getElementById('graph-panel').innerHTML = `<div style="font-size:12px;color:var(--text3);padding:4px 0">${gIntro.length===0?'Tap the first person':'Now tap the second person'}</div>`;
+    }
+  }
+  drawGraph();
+});
+
+function sendIntro(aId, bId) {
+  if (!GEDGES.find(e=>(e.a===aId&&e.b===bId)||(e.a===bId&&e.b===aId))) GEDGES.push({a:aId,b:bId,intro:true});
+  gIntro=[]; gSel=null;
+  document.getElementById('graph-panel').innerHTML = '<div class="success">Intro sent — both people notified.</div>';
+  drawGraph();
+}
+
+// ── DETECT ──
+let detSecs=0;
+setInterval(()=>{ detSecs++; const m=Math.floor(detSecs/60),s=detSecs%60; const el=document.getElementById('det-timer'); if(el) el.textContent=`${m}:${s.toString().padStart(2,'0')}`; },1000);
+
+const DSCENARIOS = {
+  investor:{
+    transcript:`"...yeah so we lead Series A deals, typical check two to five million. We've been looking at the AI productivity space — <strong style='color:var(--text)'>what are you raising</strong> and what does traction look like?"`,
+    tag:{cls:'detect-investor',label:'Investor detected'},
+    actions:[
+      {bg:'rgba(160,128,240,0.2)',icon:'📄',label:'Send pitch deck',sub:'Delivered instantly to their phone'},
+      {bg:'rgba(96,208,240,0.15)',icon:'📊',label:'Share traction metrics',sub:'One-tap from your data room'},
+      {bg:'rgba(200,240,96,0.1)',icon:'📅',label:'Book a partner meeting',sub:'Opens your Calendly'},
+      {bg:'rgba(240,96,160,0.1)',icon:'➕',label:'Add to investor CRM',sub:'Tagged: Series A · AI · met tonight'},
+    ],
+    score:7,feedback:[
+      {dot:'#f06060',text:'Said "basically" 3 times — weakens credibility',warn:true},
+      {dot:'#1D9E75',text:'Strong hook — led with the problem, not the product'},
+      {dot:'#EF9F27',text:'Never mentioned revenue model — investors will ask',warn:true},
+      {dot:'#1D9E75',text:'Good energy and eye contact'},
+      {dot:'#EF9F27',text:'Ran 2m 40s — aim for under 90 seconds',warn:true},
+    ]
+  },
+  organizer:{
+    transcript:`"...we do four conferences a year, biggest is about eight hundred people. Honestly our biggest challenge is <strong style='color:var(--text)'>proving ROI to sponsors</strong> — they want to know if networking happened."`,
+    tag:{cls:'detect-organizer',label:'Event organizer detected'},
+    actions:[
+      {bg:'rgba(96,208,240,0.15)',icon:'🗂',label:'Send organizer deck',sub:'Includes live graph demo + ROI stats'},
+      {bg:'rgba(160,128,240,0.2)',icon:'📈',label:'Share sample event report',sub:'Connections, intros, opportunities'},
+      {bg:'rgba(200,240,96,0.1)',icon:'📅',label:'Book a platform demo',sub:'15-min walkthrough'},
+      {bg:'rgba(240,96,160,0.1)',icon:'➕',label:'Add as organizer lead',sub:'Tagged: 800 attendees · 4 events/yr'},
+    ],
+    score:8,feedback:[
+      {dot:'#1D9E75',text:'Let them name their pain before pitching — perfect'},
+      {dot:'#1D9E75',text:'Concise, no filler words'},
+      {dot:'#EF9F27',text:'Missed a chance to mention the closing graph reveal',warn:true},
+      {dot:'#EF9F27',text:'Ask about their next event date — creates urgency',warn:true},
+    ]
+  },
+  buyer:{
+    transcript:`"...we've been evaluating tools for our sales team. Right now they're using spreadsheets after every conference which is <strong style='color:var(--text)'>a nightmare for follow-up</strong>. What does pricing look like?"`,
+    tag:{cls:'detect-buyer',label:'Potential buyer detected'},
+    actions:[
+      {bg:'rgba(200,240,96,0.1)',icon:'💳',label:'Send pricing overview',sub:'Team plan, free 30-day trial'},
+      {bg:'rgba(160,128,240,0.2)',icon:'📱',label:'Demo the app live',sub:'Show them the graph right now'},
+      {bg:'rgba(96,208,240,0.15)',icon:'📅',label:'Book a team pilot',sub:'Free trial for their next event'},
+      {bg:'rgba(240,96,160,0.1)',icon:'➕',label:'Add as sales lead',sub:'Tagged: buyer · sales team · evaluating'},
+    ],
+    score:6,feedback:[
+      {dot:'#1D9E75',text:'Good — asked about team size before quoting price'},
+      {dot:'#f06060',text:'Jumped to features too fast — they want ROI',warn:true},
+      {dot:'#f06060',text:'Said "um" 5 times in 90 seconds',warn:true},
+      {dot:'#EF9F27',text:'Offer a live demo on the spot — conversion is higher',warn:true},
+    ]
+  },
+  connector:{
+    transcript:`"...I basically know everyone in the climate tech space. I'm always <strong style='color:var(--text)'>making introductions</strong> — people call me the mayor of ClimateCon."`,
+    tag:{cls:'detect-connector',label:'Power connector detected'},
+    actions:[
+      {bg:'rgba(240,96,160,0.1)',icon:'🌐',label:'Show your network graph',sub:'Let them see the web you built tonight'},
+      {bg:'rgba(160,128,240,0.2)',icon:'🤝',label:'Co-introduce right now',sub:'Make an intro together on the spot'},
+      {bg:'rgba(96,208,240,0.15)',icon:'📲',label:'Share app via NFC tap',sub:'They become a node in your graph'},
+      {bg:'rgba(200,240,96,0.1)',icon:'⭐',label:'Flag as power connector',sub:'Their intros tracked separately'},
+    ],
+    score:9,feedback:[
+      {dot:'#1D9E75',text:'Mirrored their energy immediately — excellent'},
+      {dot:'#1D9E75',text:'Smart move asking who else they met tonight'},
+      {dot:'#1D9E75',text:'No pitch — right call for a connector'},
+      {dot:'#EF9F27',text:'Could have offered a specific intro on the spot',warn:true},
+    ]
+  },
+  reset:null
+};
+
+function runDetect(type) {
+  if (type==='reset') {
+    document.getElementById('det-transcript').textContent='Waiting...';
+    document.getElementById('det-tag-area').innerHTML='<span class="detect-tag detect-none">No signal detected</span>';
+    document.getElementById('det-actions').innerHTML='';
+    document.getElementById('det-score').textContent='—';
+    document.getElementById('det-bar').style.width='0%';
+    document.getElementById('det-feedback').innerHTML='<div style="font-size:12px;color:var(--text3)">Feedback appears as you speak...</div>';
+    return;
+  }
+  const s=DSCENARIOS[type];
+  document.getElementById('det-transcript').innerHTML=s.transcript;
+  document.getElementById('det-tag-area').innerHTML=`<span class="detect-tag ${s.tag.cls}">${s.tag.label}</span>`;
+  document.getElementById('det-actions').innerHTML=s.actions.map(a=>`
+    <button class="action-btn">
+      <div class="action-icon" style="background:${a.bg}">${a.icon}</div>
+      <div style="flex:1"><div class="action-label">${a.label}</div><div class="action-sub">${a.sub}</div></div>
+      <svg width="10" height="10" viewBox="0 0 10 10" fill="none"><path d="M3 2L7 5L3 8" stroke="rgba(255,255,255,0.2)" stroke-width="1.2" stroke-linecap="round"/></svg>
+    </button>`).join('');
+  const pct=s.score*10;
+  document.getElementById('det-score').textContent=s.score;
+  document.getElementById('det-bar').style.width=pct+'%';
+  document.getElementById('det-bar').style.background=s.score>=8?'#1D9E75':s.score>=6?'#a080f0':'#EF9F27';
+  document.getElementById('det-feedback').innerHTML=s.feedback.map(f=>`
+    <div class="fb-item">
+      <div class="fb-dot" style="background:${f.dot}"></div>
+      <div style="font-size:13px;color:${f.warn?'rgba(240,239,232,0.6)':'rgba(240,239,232,0.5)'};line-height:1.4">${f.text}</div>
+    </div>`).join('');
+}
+
+window.addEventListener('resize', ()=>{ if(document.getElementById('screen-graph').classList.contains('active')) drawGraph(); });
+</script>
+</body>
+</html>
